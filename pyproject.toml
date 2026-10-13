@@ -10,16 +10,19 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "ube-foundation>=0.1.7",
+    "nti-attack-library>=0.1.0",
     "nti-scanner>=0.1.0",
+    "nti-benchmark>=0.1.0",
+    "nti-badge>=0.1.0",
     "httpx>=0.27.0",
     "pytest>=8.0.0",
     "pytest-xdist>=3.5.0",
 ]
 
-[project.optional-dependencies]
-# Note: nti-attack, nti-benchmark, and nti-badge are currently not publishable/installable from PyPI.
-# They are omitted from main dependencies so `pip install -e .` succeeds against real PyPI packages.
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+addopts = "-n auto -v --strict-markers"
+markers = [
+    "live: tests that hit live deployed services over the network",
+]

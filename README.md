@@ -16,13 +16,14 @@ Ecosystem integration test suite for Neural Trust Infrastructure (NTI).
 ## Phase 2 Status
 
 - **Chain 01:** DONE (`ube_foundation.PqcKeyPair` sign and verify integration tested)
-- **Chain 02:** DEFERRED (`nti-attack` package not published on PyPI)
+- **Chain 02:** DONE (`nti-attack-library` loaded and validated 11 attacks across 6 categories)
 - **Chain 03:** DONE (`nti-scanner` scan_directory tested on real target)
-- **Chain 04:** DEFERRED (`nti-attack` package not published on PyPI)
-- **Chain 05:** DEFERRED (`nti-benchmark` depends on `nti-attack` which is not on PyPI)
-- **Chain 06:** DONE (Live registry read endpoints `/api/health`, `/api/list`, `/api/stats`, `/api/search` return valid JSON; badge registration DEFERRED as `nti-badge` is not published on PyPI)
+- **Chain 04:** DONE (Programmatic attack execution, report signing, and independent UBE verification tested)
+- **Chain 05:** DONE (Minimal benchmark attestation signed and verified via `runner.attestation` and `ube_foundation`)
+- **Chain 06:** DONE (`nti_badge` package SVG rendering, cert validation, and live badge service read endpoints verified)
 - **Chain 07:** DONE (Registry federation manifest `/api/federation` schema, spec `NTI-Registry-Federation/1`, endpoints, peers, and timestamps verified)
 - **Chain 08:** DONE (`ube_foundation.PqcKeyPair` signature, payload, and wrong-issuer tamper detection verified; replay protection test SKIPPED as replay protection API is not exposed)
+- **Live Web Tests:** DONE (HTTP integration tests against live deployed services `nti-registry` and `nti-badge` on Vercel)
 
 ## Running Tests
 
