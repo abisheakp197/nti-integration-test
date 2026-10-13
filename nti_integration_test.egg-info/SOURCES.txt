@@ -1,7 +1,0 @@
-README.md
-pyproject.toml
-nti_integration_test.egg-info/PKG-INFO
-nti_integration_test.egg-info/SOURCES.txt
-nti_integration_test.egg-info/dependency_links.txt
-nti_integration_test.egg-info/requires.txt
-nti_integration_test.egg-info/top_level.txt
