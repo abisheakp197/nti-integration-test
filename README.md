@@ -24,9 +24,27 @@ Ecosystem integration test suite for Neural Trust Infrastructure (NTI).
 - **Chain 07:** DONE (Registry federation manifest `/api/federation` schema, spec `NTI-Registry-Federation/1`, endpoints, peers, and timestamps verified)
 - **Chain 08:** DONE (`ube_foundation.PqcKeyPair` signature, payload, and wrong-issuer tamper detection verified; replay protection test SKIPPED as replay protection API is not exposed)
 
+## Adversarial Test Suite
+
+Enterprise-tier continuous adversarial test suite in `tests/adversarial/`:
+
+- **Property-based testing** (1000+ examples per property using Hypothesis for PqcKeyPair signing/verification, tampered signatures, wrong key rejection, canonical JSON reordering, unicode roundtrip, empty and 1 MB large message payloads, high entropy inputs)
+- **Attack matrix** (all 11 registered attacks run against synthetic agent, attestation report signature verification, required fields check, determinism, and cross-attack interference)
+- **Concurrency** (100 parallel signatures, 1000 parallel verifications, 50 parallel live registry HTTP reads, 25 parallel badge generations, and 5 parallel benchmark runs across threads without race conditions or crashes)
+- **Adversarial inputs** (malformed signatures: empty, zero bytes, random high entropy, truncated, bit/byte flips; canonical JSON edge cases: None values, 10-level nesting, unicode/emoji/RTL, large lists, casing; registry HTTP error handling: invalid URL, timeout, HTML, empty body, 500)
+- **Soak test** (10,000 sequential sign/verify iterations with memory growth < 50 MB and average sign+verify latency < 50 ms)
+
 ## Running Tests
 
 ```bash
 pip install -e .
+
+# Fast adversarial test suite
+pytest tests/adversarial/ -v -m "not soak"
+
+# Soak test suite (run on demand)
+pytest tests/adversarial/ -v -m "soak"
+
+# Full integration and adversarial test suite
 pytest -n auto -v
 ```
