@@ -1,10 +1,11 @@
 import json
-from runner.run_benchmark import run_all
-from runner.attestation import sign_benchmark, verify_benchmark
+
 import ube_foundation
+from runner.attestation import sign_benchmark, verify_benchmark
+from runner.run_benchmark import run_all
 
 
-def test_chain_05_benchmark_signed_attestation():
+def test_chain_05_benchmark_signed_attestation() -> None:
     """Run minimal benchmark, produce signed attestation, and verify required fields and signature."""
     # Run minimal benchmark in-process
     bench_data = run_all()

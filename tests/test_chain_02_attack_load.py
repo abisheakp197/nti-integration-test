@@ -1,14 +1,14 @@
 from attacks._registry import get_all_attacks
 
 
-def test_chain_02_get_all_attacks_count():
+def test_chain_02_get_all_attacks_count() -> None:
     """Verify get_all_attacks returns all registered attacks in the attack library."""
     attacks = get_all_attacks()
     assert len(attacks) >= 10
     assert len(attacks) == 11
 
 
-def test_chain_02_attack_categories():
+def test_chain_02_attack_categories() -> None:
     """Verify at least 6 distinct attack categories are present in the library."""
     attacks = get_all_attacks()
     categories = {a.category for a in attacks}
@@ -17,7 +17,7 @@ def test_chain_02_attack_categories():
     assert categories == expected_categories
 
 
-def test_chain_02_attack_required_fields():
+def test_chain_02_attack_required_fields() -> None:
     """Verify each attack object exposes required metadata attributes and callable methods."""
     attacks = get_all_attacks()
     required_attrs = [

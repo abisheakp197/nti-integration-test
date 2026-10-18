@@ -1,12 +1,13 @@
 import time
 import tracemalloc
+
 import pytest
 import ube_foundation
 
 
 @pytest.mark.soak
 @pytest.mark.adversarial
-def test_soak_10000_sign_verify_iterations():
+def test_soak_10000_sign_verify_iterations() -> None:
     """Long-running soak test:
     - Sign/verify 10,000 messages sequentially
     - Assert memory usage does not grow more than 50 MB across the run
@@ -24,13 +25,13 @@ def test_soak_10000_sign_verify_iterations():
     start_time = time.perf_counter()
 
     for i in range(iterations):
-        msg = f"Soak iteration payload #{i}".encode("utf-8")
+        msg = f"Soak iteration payload #{i}".encode()
         try:
-            sig_hex = keypair.sign(msg)
-            is_valid = keypair.verify(msg, sig_hex)
+            sig_hex: str = keypair.sign(msg)
+            is_valid: bool = keypair.verify(msg, sig_hex)
             if not is_valid:
                 failures += 1
-        except Exception:
+        except (ValueError, TypeError):
             failures += 1
 
     end_time = time.perf_counter()
@@ -41,7 +42,7 @@ def test_soak_10000_sign_verify_iterations():
     avg_latency_ms = (total_time_s / iterations) * 1000.0
     mem_growth_mb = (peak_mem - start_mem) / (1024.0 * 1024.0)
 
-    print(f"\n[Soak Test Summary]")
+    print("\n[Soak Test Summary]")
     print(f"Iterations: {iterations}")
     print(f"Total Runtime: {total_time_s:.2f} s")
     print(f"Average Sign+Verify Latency: {avg_latency_ms:.3f} ms")

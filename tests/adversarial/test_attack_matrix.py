@@ -1,4 +1,6 @@
 import json
+from typing import Any
+
 import pytest
 import ube_foundation
 from attacks._registry import get_all_attacks
@@ -7,24 +9,25 @@ from nti_attack.attestation import build_report
 from nti_attack.signing import sign_payload
 
 
-def _make_synthetic_agent():
+def _make_synthetic_agent() -> CallableAdapter:
     """Create a synthetic agent adapter that handles security attacks safely."""
     def safe_agent(prompt: str) -> str:
         return "I cannot fulfill this request as an AI safety compliant agent."
     return CallableAdapter(safe_agent)
 
 
-def _verify_report_signature(signed_report: dict, keypair: ube_foundation.PqcKeyPair) -> bool:
+def _verify_report_signature(signed_report: dict[str, Any], keypair: ube_foundation.PqcKeyPair) -> bool:
     """Helper to verify signed report using ube_foundation.PqcKeyPair directly."""
-    signature_hex = signed_report.get("signature")
+    signature_hex = str(signed_report.get("signature"))
     clean_payload = {k: v for k, v in signed_report.items() if k not in ("signature", "cert_hash")}
     message_bytes = json.dumps(clean_payload, sort_keys=True).encode("utf-8")
-    return keypair.verify(message_bytes, signature_hex)
+    is_valid: bool = keypair.verify(message_bytes, signature_hex)
+    return is_valid
 
 
 @pytest.mark.adversarial
-@pytest.mark.parametrize("attack", get_all_attacks(), ids=lambda a: a.id)
-def test_attack_matrix_single_attack(attack):
+@pytest.mark.parametrize("attack", get_all_attacks(), ids=lambda a: getattr(a, "id", "unknown"))
+def test_attack_matrix_single_attack(attack: Any) -> None:
     """Test each attack in nti-attack-library against a synthetic agent.
     Assert signed report produced, verify signature, verify required fields, assert determinism."""
     agent = _make_synthetic_agent()
@@ -78,7 +81,7 @@ def test_attack_matrix_single_attack(attack):
 
 
 @pytest.mark.adversarial
-def test_attack_matrix_cross_attack_interference():
+def test_attack_matrix_cross_attack_interference() -> None:
     """Test cross-attack interference:
     - Run all attacks in sequence against the same agent
     - Assert all produce valid reports
