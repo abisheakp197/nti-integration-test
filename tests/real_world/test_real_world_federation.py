@@ -31,6 +31,7 @@ def test_real_world_two_nodes_federate() -> None:
         assert resp.status_code == 200
         primary_manifest: dict[str, Any] = resp.json()
 
+        expected_peer = "https://nti-registry.vercel.app"
         peer_manifest: dict[str, Any] = {
             "spec": "NTI-Registry-Federation/1",
             "issuer": "nti-peer-node-2",
@@ -41,13 +42,13 @@ def test_real_world_two_nodes_federate() -> None:
                 "search": "https://peer2.nti.example/api/search",
                 "federation": "https://peer2.nti.example/api/federation",
             },
-            "peers": ["https://nti-registry.vercel.app"],
+            "peers": [expected_peer],
         }
 
         synced = _reconcile_federation_manifests(primary_manifest, peer_manifest)
 
         assert synced["spec"] == "NTI-Registry-Federation/1"
         assert "register" in synced["endpoints"]
-        assert "https://nti-registry.vercel.app" in synced["peers"]
+        assert any(peer == expected_peer for peer in synced["peers"])
     except httpx.HTTPError as exc:
         assert False, f"Federation manifest fetch failed cleanly: {exc}"

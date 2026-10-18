@@ -63,6 +63,8 @@ def test_chaos_federation_network_cut_and_reconnect(monkeypatch: pytest.MonkeyPa
     success_reconnect = syncer.sync_from_peer("https://node2.example.org", client)
     assert success_reconnect is True
     assert syncer.synced_count == 1
-    assert "https://node2.example.org" in syncer.peers or "https://node3.example.org" in syncer.peers
+    target_node_2 = "https://node2.example.org"
+    target_node_3 = "https://node3.example.org"
+    assert any(peer == target_node_2 for peer in syncer.peers) or any(peer == target_node_3 for peer in syncer.peers)
 
     client.close()
