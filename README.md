@@ -2,49 +2,78 @@
 
 Ecosystem integration test suite for Neural Trust Infrastructure (NTI).
 
+This repository proves that all core NTI packages work together directly from public PyPI.
+
+## NTI Package Version Pinning
+
+| Package | Version |
+| :--- | :--- |
+| `ube-foundation` | `0.1.7` |
+| `nti-attack-library` | `0.1.0` |
+| `nti-scanner` | `0.1.0` |
+| `nti-benchmark` | `0.1.1` |
+| `nti-badge` | `0.1.0` |
+
 ## Integration Chains
 
-- **Chain 01:** ube-foundation sign/verify
-- **Chain 02:** nti-attack library load
-- **Chain 03:** nti-scanner on real target
-- **Chain 04:** nti-attack report verified by ube
-- **Chain 05:** nti-benchmark signed attestation
-- **Chain 06:** nti-badge + live registry read endpoints
-- **Chain 07:** registry federation manifest
-- **Chain 08:** tamper rejection
+- **Chain 01:** `ube-foundation` sign and verify
+- **Chain 02:** `nti-attack-library` load & registered attacks
+- **Chain 03:** `nti-scanner` scan directory on real targets
+- **Chain 04:** `nti-attack` report verified by `ube-foundation`
+- **Chain 05:** `nti-benchmark` signed attestations
+- **Chain 06:** `nti-badge` certificate rendering & live registry read endpoints
+- **Chain 07:** Registry federation manifest synchronization
+- **Chain 08:** Tamper detection and signature rejection
 
-## Phase 2 Status
+## Real-World Scenarios (`tests/real_world/`)
 
-- **Chain 01:** DONE (`ube_foundation.PqcKeyPair` sign and verify integration tested)
-- **Chain 02:** DONE (`nti-attack-library` package loaded and 11 registered attacks verified across 6 categories)
-- **Chain 03:** DONE (`nti-scanner` scan_directory tested on real target)
-- **Chain 04:** DONE (`nti-attack` attack run and report signed/verified by `ube_foundation.PqcKeyPair`)
-- **Chain 05:** DONE (`nti-benchmark` in-process run, attestation signature and required fields verified by `ube_foundation`)
-- **Chain 06:** DONE (Live registry read endpoints `/api/health`, `/api/list`, `/api/stats`, `/api/search` verified; `nti-badge` SVG generation and certificate signing/verification tested)
-- **Chain 07:** DONE (Registry federation manifest `/api/federation` schema, spec `NTI-Registry-Federation/1`, endpoints, peers, and timestamps verified)
-- **Chain 08:** DONE (`ube_foundation.PqcKeyPair` signature, payload, and wrong-issuer tamper detection verified; replay protection test SKIPPED as replay protection API is not exposed)
+1. **Fresh PyPI Environment:** Verify imports and metadata from public PyPI packages.
+2. **Real Agent Scan:** Scan realistic LangChain repository structure with `nti-scanner`.
+3. **HTTP Agent Attack:** Execute attack library against a real local HTTP agent server to produce signed reports.
+4. **End-to-End Benchmark:** Run benchmark suite end-to-end and verify signed attestations.
+5. **Airgapped Verification:** Verify signed reports in an airgapped/offline mode with zero external network calls.
+6. **Tamper Detection:** Modify certificates, payload fields, or public keys and assert signature verification rejection.
+7. **Badge & Live Registry:** Render SVG badges and verify live registry endpoints (`/api/health`, `/api/list`, `/api/stats`, `/api/search`).
+8. **Federation Synchronization:** Reconcile manifests and endpoints between multiple registry nodes.
 
-## Adversarial Test Suite
+## Chaos & Failure Injection (`tests/chaos/`)
 
-Enterprise-tier continuous adversarial test suite in `tests/adversarial/`:
+1. **Server Kill Resilience:** Terminate badge server mid-request and verify clean client exception handling + restart recovery.
+2. **Corrupt Local Store:** Inject binary garbage into persistent KV/file store and verify automatic corruption detection + state rebuild.
+3. **High Concurrency Verification:** Execute 1,000 concurrent signature verifications in parallel with memory stability assertions.
+4. **Certificate Replay Prevention:** Replay signed certificates 100 times and assert rejection after the initial submission.
+5. **Network Cut During Federation:** Disconnect network during federation sync and verify reconciliation once reconnected.
+6. **Disk Full Simulation:** Simulate `ENOSPC` (`OSError(28)`) during report export and verify graceful error handling.
+7. **Clock Skew Bounds:** Validate timestamp tolerance windows (±5 minutes) under clock skew conditions.
 
-- **Property-based testing** (1000+ examples per property using Hypothesis for PqcKeyPair signing/verification, tampered signatures, wrong key rejection, canonical JSON reordering, unicode roundtrip, empty and 1 MB large message payloads, high entropy inputs)
-- **Attack matrix** (all 11 registered attacks run against synthetic agent, attestation report signature verification, required fields check, determinism, and cross-attack interference)
-- **Concurrency** (100 parallel signatures, 1000 parallel verifications, 50 parallel live registry HTTP reads, 25 parallel badge generations, and 5 parallel benchmark runs across threads without race conditions or crashes)
-- **Adversarial inputs** (malformed signatures: empty, zero bytes, random high entropy, truncated, bit/byte flips; canonical JSON edge cases: None values, 10-level nesting, unicode/emoji/RTL, large lists, casing; registry HTTP error handling: invalid URL, timeout, HTML, empty body, 500)
-- **Soak test** (10,000 sequential sign/verify iterations with memory growth < 50 MB and average sign+verify latency < 50 ms)
-
-## Running Tests
+## Running Tests Locally
 
 ```bash
-pip install -e .
+# Install editable package and testing tools
+pip install -e . ruff mypy types-requests
 
-# Fast adversarial test suite
+# Run full test suite with random test order and parallel workers
+pytest -n auto --random-order -v
+
+# Run Real-World Scenarios
+pytest tests/real_world/ -v
+
+# Run Chaos & Failure Injection Suite
+pytest tests/chaos/ -v
+
+# Run Fast Adversarial Suite
 pytest tests/adversarial/ -v -m "not soak"
 
-# Soak test suite (run on demand)
+# Run Soak Test Suite
 pytest tests/adversarial/ -v -m "soak"
 
-# Full integration and adversarial test suite
-pytest -n auto -v
+# Code Quality and Type Checking
+ruff check .
+mypy --strict tests/
 ```
+
+## CI Matrix
+
+Tests are automatically executed on GitHub Actions across:
+- **Operating Systems:** `ubuntu-latest`, `macos-latest`, `windows-latest`
+- **Python Versions:** `3.10`, `3.11`, `3.12`, `3.13`

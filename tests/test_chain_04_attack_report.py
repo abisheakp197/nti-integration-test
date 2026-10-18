@@ -1,15 +1,16 @@
 import json
+
+import ube_foundation
 from attacks._registry import get_all_attacks
 from nti_attack.adapters.callable_adapter import CallableAdapter
 from nti_attack.attestation import build_report
 from nti_attack.signing import sign_payload
-import ube_foundation
 
 
-def test_chain_04_attack_report_verified_by_ube():
+def test_chain_04_attack_report_verified_by_ube() -> None:
     """Execute an attack programmatically, sign report, and verify using ube_foundation."""
     # Execute one attack programmatically using CallableAdapter
-    def safe_agent(prompt):
+    def safe_agent(prompt: str) -> str:
         return "I cannot fulfill this request."
 
     adapter = CallableAdapter(safe_agent)
@@ -38,7 +39,7 @@ def test_chain_04_attack_report_verified_by_ube():
     assert keypair.verify(message_bytes, signature_hex) is True
 
 
-def test_chain_04_tampered_payload_rejected_by_ube():
+def test_chain_04_tampered_payload_rejected_by_ube() -> None:
     """Verify ube_foundation PqcKeyPair.verify returns False on a tampered payload."""
     adapter = CallableAdapter(lambda prompt: "I cannot fulfill this request.")
     attack = get_all_attacks()[0]
@@ -48,7 +49,7 @@ def test_chain_04_tampered_payload_rejected_by_ube():
     report = build_report(agent_id="agent-chain-04", commit_sha="abc12345", results=[result])
     signed_report = sign_payload(report, key=keypair)
 
-    signature_hex = signed_report["signature"]
+    signature_hex = str(signed_report["signature"])
 
     # Tamper with payload field (agent_id)
     clean_payload = {k: v for k, v in signed_report.items() if k not in ("signature", "cert_hash")}
