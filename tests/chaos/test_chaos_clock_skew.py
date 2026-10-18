@@ -1,8 +1,5 @@
 import json
-from datetime import datetime, timezone
-
-import pytest
-import ube_foundation
+from datetime import UTC, datetime
 
 
 def verify_timestamp_within_window(
@@ -10,18 +7,19 @@ def verify_timestamp_within_window(
 ) -> bool:
     """Verify certificate timestamp is within ±max_skew_seconds tolerance window."""
     try:
-        issued_dt = datetime.fromisoformat(issued_at_iso.replace("Z", "+00:00"))
+        issued_dt = datetime.fromisoformat(issued_at_iso)
         delta_seconds = abs((now_dt - issued_dt).total_seconds())
         return delta_seconds <= max_skew_seconds
     except ValueError:
         return False
 
 
-@pytest.mark.chaos
 def test_chaos_clock_skew_tolerance() -> None:
     """Test signature verification and timestamp skew check with ±5 minutes clock skew."""
+    import ube_foundation
+
     keypair = ube_foundation.PqcKeyPair()
-    now_utc = datetime.now(timezone.utc)
+    now_utc = datetime.now(UTC)
 
     # 1. Signature verification is invariant to wall-clock time
     payload = {"agent": "skew-agent", "issued_at": now_utc.isoformat()}
@@ -34,13 +32,13 @@ def test_chaos_clock_skew_tolerance() -> None:
     assert verify_timestamp_within_window(now_utc.isoformat(), now_utc) is True
 
     # 3. +4 minutes skew (within tolerance)
-    time_plus_4m = datetime.fromtimestamp(now_utc.timestamp() + 240, tz=timezone.utc)
+    time_plus_4m = datetime.fromtimestamp(now_utc.timestamp() + 240, tz=UTC)
     assert verify_timestamp_within_window(payload["issued_at"], time_plus_4m, max_skew_seconds=300) is True
 
     # 4. -4 minutes skew (within tolerance)
-    time_minus_4m = datetime.fromtimestamp(now_utc.timestamp() - 240, tz=timezone.utc)
+    time_minus_4m = datetime.fromtimestamp(now_utc.timestamp() - 240, tz=UTC)
     assert verify_timestamp_within_window(payload["issued_at"], time_minus_4m, max_skew_seconds=300) is True
 
     # 5. Out-of-bounds skew (+10 minutes skew) correctly flagged
-    time_plus_10m = datetime.fromtimestamp(now_utc.timestamp() + 600, tz=timezone.utc)
+    time_plus_10m = datetime.fromtimestamp(now_utc.timestamp() + 600, tz=UTC)
     assert verify_timestamp_within_window(payload["issued_at"], time_plus_10m, max_skew_seconds=300) is False

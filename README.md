@@ -76,4 +76,4 @@ mypy --strict tests/
 
 Tests are automatically executed on GitHub Actions across:
 - **Operating Systems:** `ubuntu-latest`, `macos-latest`, `windows-latest`
-- **Python Versions:** `3.10`, `3.11`, `3.12`, `3.13`
+- **Python Versions:** `3.11`, `3.12`, `3.13`

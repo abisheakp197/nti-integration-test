@@ -7,7 +7,7 @@ name = "nti-integration-test"
 version = "0.1.0"
 description = "Ecosystem integration test suite for Neural Trust Infrastructure (NTI)"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "ube-foundation==0.1.7",
     "nti-attack-library==0.1.0",
