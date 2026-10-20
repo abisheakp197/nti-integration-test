@@ -7,17 +7,21 @@ name = "nti-integration-test"
 version = "0.1.0"
 description = "Ecosystem integration test suite for Neural Trust Infrastructure (NTI)"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "ube-foundation==0.1.7",
     "nti-attack-library==0.1.0",
     "nti-scanner==0.1.0",
     "nti-benchmark==0.1.1",
     "nti-badge==0.1.0",
+    "langchain-nti>=0.1.0",
+    "crewai-nti>=0.1.0",
+    "autogen-nti>=0.1.0",
     "httpx>=0.27.0",
     "pytest>=8.0.0",
     "pytest-xdist>=3.5.0",
     "pytest-random-order>=1.1.0",
+    "pytest-socket>=0.7.0",
     "hypothesis>=6.0.0",
 ]
 
