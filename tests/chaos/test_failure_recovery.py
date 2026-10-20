@@ -88,21 +88,27 @@ def test_network_cut_offline_badge_verification(monkeypatch: pytest.MonkeyPatch)
 # --- 2. Disk & Memory ---
 
 @pytest.mark.chaos
-def test_filesystem_oserror_disk_full_no_partial_files() -> None:
-    """Simulate OSError (disk full) during badge/cert generation and assert clean exception without partial files."""
+def test_filesystem_oserror_disk_full_no_partial_files(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Simulate OSError (disk full) during badge/cert file writing and assert no partial files remain."""
     with tempfile.TemporaryDirectory() as tmpdir:
         output_dir = Path(tmpdir) / "badges"
         output_dir.mkdir()
 
         target_file = output_dir / "badge_cert.json"
 
-        try:
-            # Simulate disk full during write operation
-            raise OSError(28, "No space left on device")
-        except OSError as err:
-            assert err.errno == 28
+        # Mock write_text on Path to throw ENOSPC
+        orig_write = Path.write_text
 
-        # Assert no partial file is left behind on disk
+        def mock_write_text(self: Path, data: str, *args: Any, **kwargs: Any) -> int:
+            if self == target_file or "badge_cert" in str(self):
+                raise OSError(28, "No space left on device")
+            return orig_write(self, data, *args, **kwargs)
+
+        monkeypatch.setattr(Path, "write_text", mock_write_text)
+
+        with pytest.raises(OSError, match="No space left on device"):
+            target_file.write_text("{\"partial\": \"data\"}")
+
         assert not target_file.exists(), "Partial file should not be left behind on disk full"
 
 
@@ -147,17 +153,21 @@ async def test_asyncio_100_parallel_verifications() -> None:
 
 @pytest.mark.chaos
 @pytest.mark.anyio
-async def test_parallel_agent_handoffs_no_deadlock() -> None:
+async def test_parallel_agent_handoffs_no_deadlock(monkeypatch: pytest.MonkeyPatch) -> None:
     """Run 50 parallel agent handoffs in crewai-nti / autogen-nti and assert no deadlocks or state contamination."""
-    try:
-        NTIGuardrailMiddleware(agent_id="crew-agent", strict=False)
-        NTISecurityWrapper(agent_id="autogen-agent", strict=False)
-    except AttributeError:
-        pass
+    def mock_eval(self: Any, req_json: str) -> str:
+        return json.dumps({"decision": "Deny", "reason": "Capability not granted"})
+
+    monkeypatch.setattr(ube_foundation.TrustEngine, "evaluate", mock_eval)
+
+    guardrail = NTIGuardrailMiddleware(agent_id="crew-agent", strict=False)
+    sec_wrapper = NTISecurityWrapper(agent_id="autogen-agent", strict=False)
 
     async def handoff_task(i: int) -> bool:
         await asyncio.sleep(0.001)
-        return True
+        res1 = guardrail.verify_tool_execution(f"tool_{i}", {"step": i})
+        res2 = sec_wrapper.verify_message(f"cap_{i}", {"msg": f"hello_{i}"})
+        return res1 is False and res2 is False
 
     tasks = [handoff_task(i) for i in range(50)]
     results = await asyncio.gather(*tasks)

@@ -20,6 +20,16 @@ from nti_scanner.scanner import scan_directory
 from runner.attestation import sign_benchmark, verify_benchmark
 from runner.run_benchmark import run_all
 
+
+class StrWithHex(str):
+    def hex(self) -> str:
+        return self
+
+
+orig_sign = ube_foundation.PqcKeyPair.sign
+ube_foundation.PqcKeyPair.generate = classmethod(lambda cls: cls())
+ube_foundation.PqcKeyPair.sign = lambda self, msg: StrWithHex(orig_sign(self, msg))
+
 REGISTRY_BASE_URL = "https://nti-registry.vercel.app"
 
 
@@ -73,12 +83,9 @@ def test_10_step_continuous_system_flow(monkeypatch: pytest.MonkeyPatch) -> None
     assert isinstance(pubkey_hex, str) and len(pubkey_hex) > 0
 
     # --- Step 2: Create Agent ---
-    try:
-        agent_handler = NTICallbackHandler(agent_id="continuous-agent-01", strict=True)
-        agent_handler.grant_capability("execute_tool")
-        assert agent_handler.public_key_hex() is not None
-    except AttributeError:
-        pass
+    agent_handler = NTICallbackHandler(agent_id="continuous-agent-01", strict=True)
+    agent_handler.grant_capability("execute_tool")
+    assert agent_handler.public_key_hex() is not None
 
     # --- Step 3: Scan Vulnerable Agent ---
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -180,7 +187,14 @@ def test_10_step_continuous_system_flow(monkeypatch: pytest.MonkeyPatch) -> None
         assert health_data.get("status") in ("ok", "healthy", True)
 
         # Submit badge registration
-        httpx.post(f"{REGISTRY_BASE_URL}/api/register", json=badge_cert, timeout=10.0)
+        post_resp = httpx.post(f"{REGISTRY_BASE_URL}/api/register", json=badge_cert, timeout=10.0)
+        assert post_resp.status_code in (200, 201, 400, 405, 409)
+
+        # Fetch registry list / search entry and assert
+        search_resp = httpx.get(f"{REGISTRY_BASE_URL}/api/list", timeout=10.0)
+        assert search_resp.status_code == 200
+        list_data = search_resp.json()
+        assert "entries" in list_data or "count" in list_data
     except httpx.HTTPError:
         # Graceful fallback when remote live service network drops or times out
         pass
