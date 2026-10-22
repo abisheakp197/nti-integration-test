@@ -77,3 +77,54 @@ mypy --strict tests/
 Tests are automatically executed on GitHub Actions across:
 - **Operating Systems:** `ubuntu-latest`, `macos-latest`, `windows-latest`
 - **Python Versions:** `3.11`, `3.12`, `3.13`
+
+## Architecture
+
+```mermaid
+graph TD
+    subgraph CI["CI/CD Pipeline (GitHub Actions)"]
+        GA_TEST["Integration Matrix (test.yml)<br/>Ubuntu / macOS / Windows<br/>Python 3.11 | 3.12 | 3.13"]
+        GA_ADV["Adversarial Suite (adversarial.yml)<br/>Fast Fuzzing & Soak Tests"]
+        PYPI["PyPI Package Registry<br/>(Public Releases)"]
+        GA_TEST -->|Install pinned packages| PYPI
+        GA_ADV -->|Install pinned packages| PYPI
+    end
+
+    subgraph ECOSYSTEM["NTI Ecosystem Under Test"]
+        UBE["ube-foundation v0.1.7<br/>(PQC Sign & Verify)"]
+        ATTACK["nti-attack-library v0.1.0<br/>(Attack Engine)"]
+        SCANNER["nti-scanner v0.1.0<br/>(Static & Runtime Scanner)"]
+        BENCHMARK["nti-benchmark v0.1.1<br/>(Attestation Suite)"]
+        BADGE["nti-badge v0.1.0<br/>(Badge & Certificate Engine)"]
+        WRAPPERS["Agent Wrappers<br/>(langchain-nti, crewai-nti, autogen-nti)"]
+    end
+
+    PYPI -->|Downloads| UBE
+    PYPI -->|Downloads| ATTACK
+    PYPI -->|Downloads| SCANNER
+    PYPI -->|Downloads| BENCHMARK
+    PYPI -->|Downloads| BADGE
+    PYPI -->|Downloads| WRAPPERS
+
+    subgraph SUITES["Test Harness Suites"]
+        RW_SUITE["Real-World Scenarios (tests/real_world/)<br/>• PyPI Install & Metadata<br/>• Agent Repository Scanning<br/>• HTTP Agent Attack Execution<br/>• E2E Benchmark Attestations<br/>• Airgapped Verification<br/>• Tamper & Rejection Assertions<br/>• Badge & Registry Querying<br/>• Federation Sync"]
+        CHAOS_SUITE["Chaos & Failure Injection (tests/chaos/)<br/>• Server Kill Resilience<br/>• Store Corruption Recovery<br/>• Concurrency Stress (1000 ops)<br/>• Replay Attack Rejection<br/>• Network Cut Sync Recovery<br/>• Disk Full Simulation<br/>• Clock Skew Tolerance"]
+        ADV_SUITE["Adversarial & Fuzzing (tests/adversarial/)<br/>• Malicious Payload Fuzzing<br/>• Attack Matrix Coverage<br/>• Property-Based Testing<br/>• Concurrency Race Detection<br/>• Long-Running Soak Testing"]
+    end
+
+    GA_TEST -->|Triggers| RW_SUITE
+    GA_TEST -->|Triggers| CHAOS_SUITE
+    GA_ADV -->|Triggers| ADV_SUITE
+
+    RW_SUITE -->|Executes & Verifies| ECOSYSTEM
+    CHAOS_SUITE -->|Stresses & Injects Faults| ECOSYSTEM
+    ADV_SUITE -->|Fuzzes & Attacks| ECOSYSTEM
+
+    subgraph EXT["External Live Services"]
+        REG_API["Live nti-registry API<br/>(https://nti-registry.vercel.app)<br/>/api/health, /api/list, /api/stats, /api/search"]
+        BADGE_API["Live nti-badge API<br/>(https://nti-badge.vercel.app)<br/>SVG Badging & Cert Endpoints"]
+    end
+
+    RW_SUITE -->|Live HTTP Health & Query Checks| REG_API
+    RW_SUITE -->|Certificate Validation Checks| BADGE_API
+```
